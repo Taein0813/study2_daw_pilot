@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>음악 감정 평가 실험 (파일럿)</title>
+
+  <!-- jsPsych core -->
+  <script src="https://unpkg.com/jspsych@7.3.4"></script>
+  <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
+
+  <!-- plugins -->
+  <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.3"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.0.3"></script>
+
+  <style>
+    body {
+      max-width: 1100px;
+      margin: 0 auto;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      font-size: 16px;
+    }
+    h1.main-title {
+      text-align: center;
+      margin: 18px 8px 8px;
+      font-size: 28px;
+      line-height: 1.3;
+    }
+    fieldset {
+      margin-bottom: 18px;
+      border: 1px dashed #a0a0a0;
+      padding: 12px 18px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    legend { font-weight: 700; padding: 0 6px; }
+    .progress-text {
+      text-align: right;
+      font-size: 13px;
+      margin: 6px 4px 4px;
+      color: #555;
+    }
+
+    .info-text { font-size: 15px; line-height: 1.7; margin-top: 12px; }
+
+    .song-block {
+      border: 1px solid #e2e2e2;
+      border-radius: 10px;
+      background: #fff;
+      padding: 14px 14px;
+      margin: 14px 0;
+    }
+    .song-instruction {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px dashed #ccc;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+    .song-instruction p {
+      margin: 0;
+      flex: 1;
+      min-width: 220px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .jspsych-btn { padding: 10px 18px; font-size: 16px; }
+    .slider-row { margin: 10px 0 16px 0; font-size: 15px; }
+    .slider-label-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .slider-wrap { position: relative; width: 100%; margin-top: 6px; }
+    .slider-wrap input[type="range"] { width: 100%; margin: 0; height: 28px; }
+    .slider-wrap .mid-tick {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 2px;
+      height: 130%;
+      background: #777;
+      pointer-events: none;
+    }
+
+    #jspsych-survey-html-form-next { margin-bottom: 40px; }
+
+    .textarea {
+      width: 100%;
+      min-height: 220px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      border-radius: 8px;
+      border: 1px solid #cfcfcf;
+      box-sizing: border-box;
+      resize: vertical;
+      background: #fff;
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 0 14px; font-size: 18px; }
+      h1.main-title { font-size: 26px; }
+      .song-instruction p { font-size: 15px; }
+      legend { font-size: 16px; }
+      .progress-text { font-size: 14px; }
+      .textarea { font-size: 16px; min-height: 260px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="jspsych-target"></div>
+
+  <script>
+    // -----------------------------
+    // 0. 제출 받을 Google Apps Script Web App URL
+    // -----------------------------
+    const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbx15kYuTQuzEXWxZnghgcGFXiYIDdUJq_LnQ-iXUmwAUZE5Jpy_gcvBMfqsnhQH4ZNN/exec";
+    let submitRequested = false;
+
+    // -----------------------------
+    // 1. jsPsych 초기화
+    // -----------------------------
+    const jsPsych = initJsPsych({
+      display_element: "jspsych-target",
+      on_finish: function () {
+        const csv = jsPsych.data.get().csv();
+
+        const now = new Date();
+        const submitted_at = now.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+        const submitted_iso = now.toISOString();
+
+        fetch(SUBMIT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subject_id: subject_id,
+            name: participant_name,
+            csv: csv,
+            submitted_at: submitted_at,
+            submitted_iso: submitted_iso,
+          }),
+        });
+
+        submitRequested = true;
+      },
+    });
+
+    // 참가자 ID
+    const subject_id = jsPsych.randomization.randomID(10);
+    let participant_name = "";
+
+    // -----------------------------
+    // 2. 시작 화면: 이름만 입력
+    // -----------------------------
+    const name_screen = {
+      type: jsPsychSurveyHtmlForm,
+      preamble: `
+        <h1 class="main-title">음악 감정 평가 실험 (파일럿)</h1>
+        <div class="info-text" style="text-align:left;">
+          아래에 <strong>본인 이름</strong>만 입력한 뒤 시작해 주세요.<br>
+          * 중간에 나가시면 저장이 안됩니다. 한번에 끝까지 진행해 주세요!<br>
+          * 조용한 곳에서 가장 편한 방법으로 들어주세요.<br>
+          * 너무 오래 생각하지 마시고 직관적으로 평가해 주세요.
+        </div>
+      `,
+      html: `
+        <div class="info-text" style="text-align:left; margin-top:14px;">
+          <label style="font-weight:600;">이름: </label>
+          <input type="text" name="name" required placeholder="예: 홍길동" style="padding:6px 8px; width:280px; max-width:100%;">
+        </div>
+      `,
+      button_label: "실험 시작하기",
+      on_finish: function (data) {
+        const resp = data.response || {};
+        participant_name = (resp.name || "").trim();
+
+        jsPsych.data.addProperties({
+          subject_id: subject_id,
+          name: participant_name,
+        });
+      },
+    };
+
+    // -----------------------------
+    // 3. 자극 목록 (✅ 고정 순서로 나오게)
+    //    - 파일명은 화면에 표시되지 않음 (audio src로만 사용)
+    //    - 예시: calm_C01, calm_D01, calm_E01 ... 이런 식으로 넣으면 됨
+    // -----------------------------
+    const stimuli = [
+      // calm
+      { file: "stims/calm_C01.wav", base_emotion: "calm", tag: "C" },
+      { file: "stims/calm_D01.wav", base_emotion: "calm", tag: "D" },
+      { file: "stims/calm_E01.wav", base_emotion: "calm", tag: "E" },
+
+      // cheerful
+      { file: "stims/cheerful_C01.wav", base_emotion: "cheerful", tag: "C" },
+      { file: "stims/cheerful_D01.wav", base_emotion: "cheerful", tag: "D" },
+      { file: "stims/cheerful_E01.wav", base_emotion: "cheerful", tag: "E" },
+
+      // tense
+      { file: "stims/tense_C01.wav", base_emotion: "tense", tag: "C" },
+      { file: "stims/tense_D01.wav", base_emotion: "tense", tag: "D" },
+      { file: "stims/tense_E01.wav", base_emotion: "tense", tag: "E" },
+
+      // sad
+      { file: "stims/sad_C01.wav", base_emotion: "sad", tag: "C" },
+      { file: "stims/sad_D01.wav", base_emotion: "sad", tag: "D" },
+      { file: "stims/sad_E01.wav", base_emotion: "sad", tag: "E" },
+    ];
+
+    // -----------------------------
+    // 4. 3개씩 묶어서 "페이지(trial)" 만들기
+    // -----------------------------
+    const PAGE_SIZE = 3;
+    const pages = [];
+    for (let i = 0; i < stimuli.length; i += PAGE_SIZE) {
+      const chunk = stimuli.slice(i, i + PAGE_SIZE);
+      if (chunk.length === PAGE_SIZE) pages.push(chunk);
+    }
+    const TOTAL_PAGES = pages.length;
+
+    // timeline_variables 형태로 변환 (page1/page2/...)
+    const page_vars = pages.map((chunk, pageIndex) => ({
+      page_index: pageIndex + 1,
+      total_pages: TOTAL_PAGES,
+      stims: chunk, // 길이 3
+    }));
+
+    // -----------------------------
+    // 5. "한 페이지에 곡 3개" trial
+    //    - 곡마다 Play + Valence + Arousal
+    // -----------------------------
+    const three_song_va_trial = {
+      type: jsPsychSurveyHtmlForm,
+      html: function () {
+        const pageIndex = jsPsych.timelineVariable("page_index");
+        const totalPages = jsPsych.timelineVariable("total_pages");
+        const stims = jsPsych.timelineVariable("stims"); // 3개
+
+        const progressHTML = `
+          <div class="progress-text">
+            Page ${pageIndex} / ${totalPages}
+          </div>
+        `;
+
+        // 곡 3개 블록 만들기
+        let blocksHTML = "";
+        stims.forEach((s, k) => {
+          const audioId = `audio-p${pageIndex}-k${k+1}`;
+
+          blocksHTML += `
+            <div class="song-block">
+              <div class="song-instruction">
+                <p>
+                  아래 <strong>Play</strong> 버튼을 눌러 음악을 들어주세요. 필요하면 여러 번 들을 수 있습니다.
+                </p>
+                <button type="button"
+                        class="jspsych-btn"
+                        data-audio-id="${audioId}">
+                  Play
+                </button>
+                <audio id="${audioId}" src="${s.file}" preload="auto"></audio>
+              </div>
+
+              <fieldset>
+                <legend>Valence (정서가)</legend>
+                <div class="slider-row">
+                  <div class="slider-wrap">
+                    <input type="range" name="v_${k+1}" min="0" max="100" step="1" value="50" required />
+                    <div class="mid-tick"></div>
+                  </div>
+                  <div class="slider-label-line">
+                    <span>매우 부정적인 (0)</span>
+                    <span>매우 긍정적인 (100)</span>
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Arousal (각성도)</legend>
+                <div class="slider-row">
+                  <div class="slider-wrap">
+                    <input type="range" name="a_${k+1}" min="0" max="100" step="1" value="50" required />
+                    <div class="mid-tick"></div>
+                  </div>
+                  <div class="slider-label-line">
+                    <span>매우 이완된, 차분한 (0)</span>
+                    <span>매우 각성된, 강렬한 (100)</span>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+          `;
+        });
+
+        return `
+          ${progressHTML}
+
+          <h3 style="text-align:center; margin-top:10px;">
+            이 페이지에는 <strong>3개의 음악</strong>이 있습니다. 각 음악을 들은 뒤 <strong>Valence/Arousal</strong>을 평가해 주세요.
+          </h3>
+
+          ${blocksHTML}
+        `;
+      },
+      button_label: "다음",
+      data: function () {
+        const pageIndex = jsPsych.timelineVariable("page_index");
+        const stims = jsPsych.timelineVariable("stims");
+        return {
+          page_index: pageIndex,
+          stim1_file: stims[0].file,
+          stim1_base_emotion: stims[0].base_emotion,
+          stim1_tag: stims[0].tag,
+          stim2_file: stims[1].file,
+          stim2_base_emotion: stims[1].base_emotion,
+          stim2_tag: stims[1].tag,
+          stim3_file: stims[2].file,
+          stim3_base_emotion: stims[2].base_emotion,
+          stim3_tag: stims[2].tag,
+        };
+      },
+
+      on_load: function () {
+        const pageIndex = jsPsych.timelineVariable("page_index");
+        const stims = jsPsych.timelineVariable("stims");
+        const nextBtn = document.getElementById("jspsych-survey-html-form-next");
+
+        // ✅ 곡 3개 각각 "재생했는지" 추적
+        const hasPlayed = [false, false, false];
+
+        // Play 버튼 클릭 시 해당 audio 재생 + hasPlayed 표시
+        const playButtons = document.querySelectorAll('button[data-audio-id]');
+        playButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const audioId = btn.getAttribute("data-audio-id");
+            const audioEl = document.getElementById(audioId);
+            if (audioEl) audioEl.play();
+
+            // k 찾기
+            // audioId 형식: audio-p{pageIndex}-k{1..3}
+            const m = audioId.match(/-k(\d)$/);
+            if (m) {
+              const k = Number(m[1]) - 1;
+              if (k >= 0 && k < 3) hasPlayed[k] = true;
+            }
+          });
+        });
+
+        // 다음 버튼 클릭 전에, 3곡 모두 1번 이상 재생했는지 체크
+        if (nextBtn) {
+          nextBtn.addEventListener("click", function (e) {
+            const allPlayed = hasPlayed.every(x => x === true);
+            if (!allPlayed) {
+              e.preventDefault();
+              e.stopPropagation();
+              alert("이 페이지의 3개 음악을 모두 최소 1번씩 Play로 들어주신 뒤 다음으로 넘어가 주세요.");
+            }
+          });
+        }
+      },
+
+      on_finish: function (data) {
+        const resp = data.response || {};
+
+        // ✅ 각 곡의 VA 값을 wide-format으로 저장
+        data.stim1_valence = resp.v_1 !== undefined ? Number(resp.v_1) : null;
+        data.stim1_arousal = resp.a_1 !== undefined ? Number(resp.a_1) : null;
+
+        data.stim2_valence = resp.v_2 !== undefined ? Number(resp.v_2) : null;
+        data.stim2_arousal = resp.a_2 !== undefined ? Number(resp.a_2) : null;
+
+        data.stim3_valence = resp.v_3 !== undefined ? Number(resp.v_3) : null;
+        data.stim3_arousal = resp.a_3 !== undefined ? Number(resp.a_3) : null;
+
+        data.subject_id = subject_id;
+        data.name = participant_name;
+      },
+    };
+
+    const va_pages_procedure = {
+      timeline: [three_song_va_trial],
+      timeline_variables: page_vars,
+      randomize_order: false, // ✅ 고정 순서 유지
+    };
+
+    // -----------------------------
+    // 6. 주관식(자유응답) + 청취 방식 (기존 유지)
+    // -----------------------------
+    const free_response = {
+      type: jsPsychSurveyHtmlForm,
+      preamble: `
+        <h1 class="main-title">자유 의견</h1>
+        <div class="info-text" style="text-align:left;">
+          아래 문항에 응답해 주세요.
+        </div>
+      `,
+      html: `
+        <fieldset>
+          <legend style="font-weight:700;">어떤 방식으로 음악을 들으셨는지 체크해 주세요. (필수)</legend>
+
+          <label style="display:block; margin: 10px 0;">
+            <input type="radio" name="listening_method" value="블루투스" required>
+            블루투스
+          </label>
+
+          <label style="display:block; margin: 10px 0;">
+            <input type="radio" name="listening_method" value="스피커">
+            스피커
+          </label>
+
+          <label style="display:block; margin: 10px 0;">
+            <input type="radio" name="listening_method" value="헤드폰">
+            헤드폰
+          </label>
+
+          <label style="display:block; margin: 10px 0;">
+            <input type="radio" name="listening_method" value="기타" id="lm_other_radio">
+            기타
+          </label>
+
+          <input
+            type="text"
+            name="listening_method_other"
+            id="lm_other_text"
+            placeholder="기타인 경우 여기에 입력해 주세요"
+            style="padding:6px 8px; width:420px; max-width:100%;"
+            disabled
+          />
+          <div style="font-size:12px; color:#555; margin-top:6px;">
+            * ‘기타’를 선택한 경우 위 칸에 내용을 반드시 입력해 주세요.
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend style="font-weight:700;">자유 의견 (선택)</legend>
+
+          <div class="info-text" style="text-align:left; margin-top:6px;">
+            <strong>질문:</strong> 이번 실험이나, 일상에서 듣는 음악 전반에 관련해 음악 감정에 대한 본인의 의견을 자유롭게 써주세요.<br><br>
+            <span style="color:#444; font-size:12.5px;">
+              (예시)<br>
+              - 보통 음악의 ㅇㅇㅇ한 감정은 잘 느껴지는데, ㅇㅇㅇ한 감정은 잘 모르겠다.<br>
+              - 전반적으로 이 실험에서 감정 평가를 하는 데 자신감이 없었다.<br>
+              - 저번 첫 번째 실험과 달리~, 저번 실험과 비슷하게~ ㅇㅇㅇㅇ였다.<br>
+              - ㅇㅇ한 특징이 있는 음악은 더 ㅇㅇ하게 느껴지는 것 같다. 등
+            </span>
+          </div>
+
+          <div style="margin-top:14px;">
+            <textarea class="textarea" name="free_comment"
+              placeholder="여기에 자유롭게 작성해 주세요. (비워도 됩니다)"></textarea>
+          </div>
+        </fieldset>
+      `,
+      button_label: "마지막으로 제출하기",
+
+      on_load: function () {
+        const otherRadio = document.getElementById("lm_other_radio");
+        const otherText  = document.getElementById("lm_other_text");
+        const nextBtn    = document.getElementById("jspsych-survey-html-form-next");
+
+        function updateOtherState() {
+          const isOther = otherRadio && otherRadio.checked;
+          if (!otherText) return;
+
+          otherText.disabled = !isOther;
+
+          if (isOther) {
+            otherText.setAttribute("required", "required");
+            otherText.focus();
+          } else {
+            otherText.removeAttribute("required");
+            otherText.value = "";
+          }
+        }
+
+        const radios = document.querySelectorAll('input[name="listening_method"]');
+        radios.forEach(r => r.addEventListener("change", updateOtherState));
+
+        updateOtherState();
+
+        if (nextBtn) {
+          nextBtn.addEventListener("click", function (e) {
+            const selected = document.querySelector('input[name="listening_method"]:checked');
+            if (!selected) {
+              e.preventDefault();
+              e.stopPropagation();
+              alert("청취 방식을 선택해 주세요.");
+              return;
+            }
+
+            if (selected.value === "기타") {
+              const v = (otherText && otherText.value ? otherText.value.trim() : "");
+              if (!v) {
+                e.preventDefault();
+                e.stopPropagation();
+                alert("‘기타’를 선택하신 경우, 내용을 입력해 주세요.");
+                return;
+              }
+            }
+          });
+        }
+      },
+
+      on_finish: function (data) {
+        const resp = data.response || {};
+        data.listening_method = (resp.listening_method || "").trim();
+        data.listening_method_other = (resp.listening_method_other || "").trim();
+        data.free_comment = (resp.free_comment || "").trim();
+      },
+    };
+
+    // -----------------------------
+    // 7. 종료 화면 (기존 유지)
+    // -----------------------------
+    const outro = {
+      type: jsPsychHtmlButtonResponse,
+      stimulus: `
+        <h2>마지막 단계입니다.</h2>
+        <p>아래 <strong>종료</strong> 버튼을 누르면 응답 제출이 완료됩니다.</p>
+      `,
+      choices: ["종료 (꼭 눌러주세요)"],
+      on_finish: function () {
+        jsPsych.endExperiment(`
+          <div style="max-width:720px; margin:120px auto; text-align:center; line-height:1.7;">
+            <h2 style="margin-bottom:14px;">정상적으로 응답이 저장되었습니다.</h2>
+            <p>실험에 참여해 주셔서 감사합니다.</p>
+          </div>
+        `);
+      },
+    };
+
+    // -----------------------------
+    // 8. 전체 실행
+    // -----------------------------
+    jsPsych.run([
+      name_screen,
+      va_pages_procedure, // ✅ 3곡씩 VA만 평가하는 페이지들
+      free_response,
+      outro,
+    ]);
+  </script>
+</body>
+</html>
