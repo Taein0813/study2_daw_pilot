@@ -196,27 +196,44 @@
     //    - 파일명은 화면에 표시되지 않음 (audio src로만 사용)
     //    - 예시: calm_C01, calm_D01, calm_E01 ... 이런 식으로 넣으면 됨
     // -----------------------------
-    const stimuli = [
-      // calm
-      { file: "stims/calm_C01.wav", base_emotion: "calm", tag: "C" },
-      { file: "stims/calm_D01.wav", base_emotion: "calm", tag: "D" },
-      { file: "stims/calm_E01.wav", base_emotion: "calm", tag: "E" },
+const stimuli = [
+  // calm
+  { file: "stims/calm_C01.mp3", base_emotion: "calm", tag: "C" },
+  { file: "stims/calm_D01.wav", base_emotion: "calm", tag: "D" },
+  { file: "stims/calm_E01.wav", base_emotion: "calm", tag: "E" },
 
-      // cheerful
-      { file: "stims/cheerful_C01.wav", base_emotion: "cheerful", tag: "C" },
-      { file: "stims/cheerful_D01.wav", base_emotion: "cheerful", tag: "D" },
-      { file: "stims/cheerful_E01.wav", base_emotion: "cheerful", tag: "E" },
+  { file: "stims/calm_S01.mp3", base_emotion: "calm", tag: "S" },
+  { file: "stims/calm_T01.wav", base_emotion: "calm", tag: "T" },
+  { file: "stims/calm_U01.wav", base_emotion: "calm", tag: "U" },
 
-      // tense
-      { file: "stims/tense_C01.wav", base_emotion: "tense", tag: "C" },
-      { file: "stims/tense_D01.wav", base_emotion: "tense", tag: "D" },
-      { file: "stims/tense_E01.wav", base_emotion: "tense", tag: "E" },
+  // cheerful
+  { file: "stims/cheerful_C01.mp3", base_emotion: "cheerful", tag: "C" },
+  { file: "stims/cheerful_D01.wav", base_emotion: "cheerful", tag: "D" },
+  { file: "stims/cheerful_E01.wav", base_emotion: "cheerful", tag: "E" },
 
-      // sad
-      { file: "stims/sad_C01.wav", base_emotion: "sad", tag: "C" },
-      { file: "stims/sad_D01.wav", base_emotion: "sad", tag: "D" },
-      { file: "stims/sad_E01.wav", base_emotion: "sad", tag: "E" },
-    ];
+  { file: "stims/cheerful_S01.mp3", base_emotion: "cheerful", tag: "S" },
+  { file: "stims/cheerful_T01.wav", base_emotion: "cheerful", tag: "T" },
+  { file: "stims/cheerful_U01.wav", base_emotion: "cheerful", tag: "U" },
+
+  // tense
+  { file: "stims/tense_C01.mp3", base_emotion: "tense", tag: "C" },
+  { file: "stims/tense_D01.wav", base_emotion: "tense", tag: "D" },
+  { file: "stims/tense_E01.wav", base_emotion: "tense", tag: "E" },
+
+  { file: "stims/tense_S01.mp3", base_emotion: "tense", tag: "S" },
+  { file: "stims/tense_T01.wav", base_emotion: "tense", tag: "T" },
+  { file: "stims/tense_U01.wav", base_emotion: "tense", tag: "U" },
+
+  // sad
+  { file: "stims/sad_C01.mp3", base_emotion: "sad", tag: "C" },
+  { file: "stims/sad_D01.wav", base_emotion: "sad", tag: "D" },
+  { file: "stims/sad_E01.wav", base_emotion: "sad", tag: "E" },
+
+  { file: "stims/sad_S01.mp3", base_emotion: "sad", tag: "S" },
+  { file: "stims/sad_T01.wav", base_emotion: "sad", tag: "T" },
+  { file: "stims/sad_U01.wav", base_emotion: "sad", tag: "U" },
+];
+
 
     // -----------------------------
     // 4. 3개씩 묶어서 "페이지(trial)" 만들기
